@@ -1,0 +1,31 @@
+#!/usr/bin/python3
+
+import sys
+import socket
+import argparse
+
+ap = argparse.ArgumentParser()
+ap.add_argument("ips", nargs="+", help="IPs to test")
+
+args = ap.parse_args()
+
+ret = 0
+for ip in args.ips:
+    fw = socket.gethostbyaddr(ip)[0]
+
+    try:
+        rev = socket.gethostbyname(fw)
+    except socket.gaierror:
+        print(f"FCrDNS failed {ip} {fw} DNS error")
+        ret = 1
+
+    if ip != rev:
+        print(f"FCrDNS failed {ip} {fw} {rev}")
+        ret = 1
+
+    revip = ".".join(reversed(ip.split('.')))
+    if revip in fw:
+        print(f"Generic name for {ip} {fw}")
+        ret = 1
+
+sys.exit(ret)

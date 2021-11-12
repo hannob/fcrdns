@@ -3,18 +3,23 @@
 import sys
 import socket
 import argparse
+import ipaddress
 
 ap = argparse.ArgumentParser()
 ap.add_argument("ips", nargs="+", help="IPs to test")
-
+ap.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
 args = ap.parse_args()
 
 ret = 0
 for ip in args.ips:
-    fw = socket.gethostbyaddr(ip)[0]
+    ipx = ipaddress.ip_address(ip)
+    fw = socket.getfqdn(ip)
 
     try:
-        rev = socket.gethostbyname(fw)
+        if isinstance(ipx, ipaddress.IPv6Address):
+            rev = socket.getaddrinfo(fw, None, socket.AF_INET6)[0][4][0]
+        else:
+            rev = socket.gethostbyname(fw)
     except socket.gaierror:
         print(f"FCrDNS failed {ip} {fw} DNS error")
         ret = 1
@@ -27,5 +32,8 @@ for ip in args.ips:
     if revip in fw:
         print(f"Generic name for {ip} {fw}")
         ret = 1
+
+    if args.verbose and ret == 0:
+        print(f"Ok {ip} {fw} {revip}")
 
 sys.exit(ret)
